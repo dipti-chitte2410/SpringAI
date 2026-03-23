@@ -1,4 +1,4 @@
-package org.example;
+package org.example.config;
 
 import org.apache.commons.compress.utils.Lists;
 import org.springframework.ai.document.Document;
