@@ -1,5 +1,8 @@
 package org.example.config;
 
+import org.example.toolcalling.CalculatorTool;
+import org.example.toolcalling.DateTimeTool;
+import org.example.toolcalling.WeatherTool;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor;
@@ -14,28 +17,34 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ChatConfig {
 
-    // Spring AI provides this bean automatically
     @Bean
     public ChatMemory chatMemory() {
-        return new InMemoryChatMemory();  // stored in RAM, resets on restart
+        return new InMemoryChatMemory();
     }
 
     @Bean
     public ChatClient chatClient(ChatModel chatModel,
                                  ChatMemory chatMemory,
-                                 VectorStore vectorStore) {
+                                 VectorStore vectorStore,
+                                 WeatherTool weatherTool,
+                                 CalculatorTool calculatorTool,
+                                 DateTimeTool dateTimeTool) {
+
         return ChatClient.builder(chatModel)
                 .defaultSystem("""
-                You are a helpful assistant. Remember the conversation history
-                and refer to it when answering follow-up questions.
+                You are a helpful assistant with access to tools.
+                - Use the weather tool when asked about weather
+                - Use the calculator tool for any math
+                - Use the datetime tool for date/time questions
+                - Use RAG context for document questions
+                - Answer directly if no tool is needed
                 """)
                 .defaultAdvisors(
-                        // Memory advisor — MUST be first
                         new MessageChatMemoryAdvisor(chatMemory),
-
-                        // RAG advisor — retrieves relevant docs
                         new QuestionAnswerAdvisor(vectorStore, SearchRequest.builder().build())
                 )
+                // Register all tools here
+                .defaultTools(weatherTool, calculatorTool, dateTimeTool)
                 .build();
     }
 }
